@@ -1,7 +1,8 @@
+using MySqlConnector;
 using System;
 using System.Data;
+using Unity.VisualScripting;
 using UnityEngine;
-using MySqlConnector;
 using UnityEngine.UI;
 
 public class uta_ChatManager : MonoBehaviour
@@ -19,6 +20,8 @@ public class uta_ChatManager : MonoBehaviour
     private float sendTimer = 0f;
     private float chatTimer = 0f;
     private int lastMessageId = 0;
+
+    public ScrollRect scrollRect;
 
     void Start()
     {
@@ -92,6 +95,8 @@ public class uta_ChatManager : MonoBehaviour
                     cmd.Parameters.AddWithValue("@lastId", lastMessageId);
                     using (var reader = cmd.ExecuteReader())
                     {
+                        bool added = false;
+
                         while (reader.Read())
                         {
                             int id = reader.GetInt32(0);
@@ -100,6 +105,13 @@ public class uta_ChatManager : MonoBehaviour
 
                             chatText.text += $"User {uid}: {msg}\n";
                             lastMessageId = id;
+                        }
+
+                        // 新しいメッセージがあったら一番下へ
+                        if (added)
+                        {
+                            Canvas.ForceUpdateCanvases();
+                            scrollRect.verticalNormalizedPosition = 0f;
                         }
                     }
                 }
