@@ -15,7 +15,7 @@ public class uta_ChatManager : MonoBehaviour
     [Header("Settings")]
     private float sendInterval = 0.5f;
     public float chatRefreshInterval = 1f;
-    public int userId = 1; // 自分のユーザーID
+    private int userId; // 自分のユーザーID
 
     private float sendTimer = 0f;
     private float chatTimer = 0f;
@@ -23,8 +23,24 @@ public class uta_ChatManager : MonoBehaviour
 
     public ScrollRect scrollRect;
 
+    public Transform content;           // ScrollView/Content
+    public GameObject messagePrefab;    // ChatMessage プレハブ
+
+    public uta_ConfirmDialogManager confirmDialog;
+
     void Start()
     {
+        if (PlayerPrefs.HasKey("UserId"))
+        {
+            userId = PlayerPrefs.GetInt("UserId");
+        }
+        else
+        {
+            userId = CreateNewUser();
+            PlayerPrefs.SetInt("UserId", userId);
+            PlayerPrefs.Save();
+        }
+
         inputField.ActivateInputField();
     }
 
@@ -51,6 +67,40 @@ public class uta_ChatManager : MonoBehaviour
             RefreshChat();
             chatTimer = 0f;
         }
+    }
+
+    int CreateNewUser()
+    {
+        using (var conn = new MySqlConnection(connStr))
+        {
+            conn.Open();
+            string sql = "INSERT INTO Users () VALUES (); SELECT LAST_INSERT_ID();";
+            using (var cmd = new MySqlCommand(sql, conn))
+            {
+                return Convert.ToInt32(cmd.ExecuteScalar());
+            }
+        }
+    }
+
+    string GetUserColor(int userId)
+    {
+        switch (userId)
+        {
+            case 1: return "#FF0000"; // 赤
+            case 2: return "#0000ff"; // 青
+            case 3: return "#00ff00"; // 緑
+            case 4: return "#ffff00"; // 黄
+            case 5: return "#ffa500"; // オレンジ
+            case 6: return "#9400d3"; // 紫
+            case 7: return "#ee82ee"; // ピンク
+            case 8: return "#00ffff"; // 水色
+            default: return "#000000"; // 9以降は黒
+        }
+    }
+
+    public void ShowConfirmDialog(int messageId)
+    {
+        confirmDialog.Setup("このメッセージを削除しますか？", messageId, this);
     }
 
     #region Chat Functions
@@ -99,11 +149,31 @@ public class uta_ChatManager : MonoBehaviour
 
                         while (reader.Read())
                         {
+                            added = true;
+
                             int id = reader.GetInt32(0);
                             int uid = reader.GetInt32(1);
                             string msg = reader.GetString(2);
 
-                            chatText.text += $"User {uid}: {msg}\n";
+                            string color = GetUserColor(uid);
+                            string text;
+
+                            //chatText.text += $"<color={color}>User {uid}:</color> {msg}\n";
+                            if (uid == userId)
+                            {
+                                // 自分のメッセージ
+                                text = chatText.text += $"<b><color={color}>User {uid}:</color></b> {msg}\n";
+                            }
+                            else
+                            {
+                                // 他人のメッセージ
+                                text = chatText.text += $"<color={color}>User {uid}:</color> {msg}\n";
+                            }
+
+                            GameObject obj = Instantiate(messagePrefab, content);
+                            var ui = obj.GetComponent<uta_ChatMessageUI>();
+                            ui.Setup(id, text, this);
+
                             lastMessageId = id;
                         }
 
