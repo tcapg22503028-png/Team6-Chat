@@ -11,18 +11,21 @@ public class uta_ConfirmDialogManager : MonoBehaviour
     private int targetMessageId;
     private uta_ChatManager chatManager;
 
-    public void Setup(string msg, int messageId, uta_ChatManager manager)
+    private uta_ChatMessageUI targetUI;
+
+    public void Setup(string msg, int messageId, uta_ChatMessageUI ui, uta_ChatManager manager)
     {
         targetMessageId = messageId;
+        targetUI = ui;
         messageText.text = msg;
         chatManager = manager;
-
         panel.SetActive(true);
     }
 
     public void OnYes()
     {
         chatManager.DeleteMessage(targetMessageId);
+        targetUI.DeleteSelf();   // UI�𑦍폜
         panel.SetActive(false);
     }
 
