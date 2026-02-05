@@ -33,24 +33,28 @@ public class uta_ChatManager : MonoBehaviour
     [SerializeField]
     private int maxChatCount = 10;
 
+    [Header("User ID UI")]
+    public GameObject userIdPanel;
+    public InputField userIdInput;
+    public Button userIdConfirmButton;
+
     void Start()
     {
+        userId = 0;   // 未ログイン状態
+
         if (PlayerPrefs.HasKey("UserId"))
         {
-            userId = PlayerPrefs.GetInt("UserId");
-        }
-        else
-        {
-            userId = CreateNewUser();
-            PlayerPrefs.SetInt("UserId", userId);
-            PlayerPrefs.Save();
+            userIdInput.text = PlayerPrefs.GetInt("UserId").ToString();
         }
 
-        inputField.ActivateInputField();
+        inputField.interactable = false;   // チャット入力無効
+        userIdPanel.SetActive(true);        // UserID入力を表示
     }
 
     void Update()
     {
+        if (userId == 0) return;
+
         // Enterでチャット送信
         if (inputField.isFocused && Input.GetKeyDown(KeyCode.Return))
         {
@@ -205,6 +209,24 @@ public class uta_ChatManager : MonoBehaviour
                 Debug.LogError("TrimOldMessages Error: " + e.Message);
             }
         }
+    }
+
+    public void OnConfirmUserId()
+    {
+        if (string.IsNullOrEmpty(userIdInput.text))
+            return;
+
+        if (!int.TryParse(userIdInput.text, out userId))
+            return;
+
+        // 必要ならDBに存在チェックしてもOK
+        PlayerPrefs.SetInt("UserId", userId);
+        PlayerPrefs.Save();
+
+        // UI切り替え
+        userIdPanel.SetActive(false);
+        inputField.interactable = true;
+        inputField.ActivateInputField();
     }
 
     #region Chat Functions
